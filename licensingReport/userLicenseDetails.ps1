@@ -1,6 +1,6 @@
 param (
     [Parameter()]
-    [ValidateSet("Philadelphia", "New York", "Boston", "Atlanta", "Denver")]
+    [ValidateSet("Philadelphia")] # other cities
     [string] $office
 )
 
