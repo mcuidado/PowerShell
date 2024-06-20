@@ -1,30 +1,49 @@
 
 Start-Transcript -Path "$($env:SystemDrive)\temp\TeamsClassicRemediate.log"
-$teamsClassicPath = Join-Path -Path $env:LOCALAPPDATA -ChildPath "Microsoft\Teams"
-$shortcutPath = Join-Path -Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -ChildPath "Microsoft Teams classic (work or school).lnk"
-$args = ("-s", "--uninstall")
 
-$proc = Start-Process -FilePath "$teamsClassicPath\Update.exe" -ArgumentList $args -PassThru -Wait
+function Uninstall-TeamsClassic($TeamsPath) {
+    try {
+        $process = Start-Process -FilePath "$TeamsPath\Update.exe" -ArgumentList "--uninstall -s" -PassThru -Wait -ErrorAction STOP
 
-$proc.WaitForExit()
-
-if(($proc.HasExited) -and ($proc.ExitCode -eq 0)){
-
-    if(-not (Test-Path -Path "$teamsClassicPath\current")){
-
-        if(Test-Path $shortcutPath){
-            Remove-Item -Path "Microsoft Teams classic (work or school).lnk" -Force | Out-Null
-            Write-Output "$env:COMPUTERNAME - SUCCESS - Teams classic icon removed successfully."
+        if ($process.ExitCode -ne 0) {
+            Write-Error "Uninstallation failed with exit code $($process.ExitCode)."
         }
-        Write-Output "$env:COMPUTERNAME - SUCCESS - Teams classic uninstalled successfully."
-    }else{
-        Write-Output "$env:COMPUTERNAME - FAIL - Teams classic failed to uninstall."
     }
-}else{
-    Write-Output "$env:COMPUTERNAME - FAIL - Teams classic failed to uninstall. Process did not finish"
+    catch {
+        Write-Error $_.Exception.Message
+    }
 }
 
+# Get all Users
+$allUsers = Get-ChildItem -Path "$($ENV:SystemDrive)\Users"
+
+# Process all Users
+foreach ($user in $allUsers) {
+    Write-Host "Processing user: $($user.Name)"
+
+    # Locate installation folder
+    $localAppData = "$($ENV:SystemDrive)\Users\$($user.Name)\AppData\Local\Microsoft\Teams"
+    $programData = "$($env:ProgramData)\$($user.Name)\Microsoft\Teams"
+
+    if (Test-Path "$localAppData\Current\Teams.exe") {
+        Write-Host "  Uninstall Teams for user $($user.Name)"
+        Uninstall-TeamsClassic -TeamsPath $localAppData
+    }
+    elseif (Test-Path "$programData\Current\Teams.exe") {
+        Write-Host "  Uninstall Teams for user $($user.Name)"
+        Uninstall-TeamsClassic -TeamsPath $programData
+    }
+    else {
+        Write-Host "  Teams installation not found for user $($user.Name)"
+    }
+}
+
+# Remove old Teams folders and icons
+$oldTeamsFolder = "$($ENV:SystemDrive)\Users\*\AppData\Local\Microsoft\Teams"
+$oldTeamsIcon = "$($ENV:SystemDrive)\Users\*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Microsoft Teams*.lnk"
+
+Get-Item $oldTeamsFolder | Remove-Item -Force -Recurse
+Get-Item $oldTeamsIcon | Remove-Item -Force -Recurse
+
 Stop-Transcript
-
-
 
