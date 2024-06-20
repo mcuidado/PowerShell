@@ -1,0 +1,9 @@
+{
+    "clientId": "YOUR_CLIENT_ID",
+    "clientCertificate": "YOUR_CLIENT_CERTIFICATE_HERE_IF_USING_APP_ONLY",
+    "tenantId": "YOUR_TENANT_ID",
+    "authTenant": "common",
+    "graphUserScopes": [
+      "User.Read.All"
+    ]
+}
